@@ -1,11 +1,1082 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cho'l Sarkardasi</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sand:#c8a96e;--sand-dark:#8b6914;--sand-light:#f0d9a8;
+  --blood:#8b1a1a;--blood-bright:#cc2222;
+  --night:#0a0d14;--night2:#12172a;--night3:#1c2440;
+  --gold:#d4a017;--gold-bright:#f0c040;
+  --teal:#1a6b5a;--teal-bright:#2ecc8a;
+  --stone:#2a2a3a;--stone2:#3a3a50;
+  --text:#e8dfc8;--muted:#8a7a60;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--night)}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Crimson Pro',serif}
+ 
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--night);transition:opacity .4s}
+.screen.hidden{opacity:0;pointer-events:none}
+ 
+#screen-title{background:radial-gradient(ellipse at 50% 60%, #1c1a0e 0%, var(--night) 70%)}
+.title-deco{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.title-deco::before{content:'';position:absolute;top:10%;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;border:1px solid rgba(212,160,23,0.08);box-shadow:0 0 80px rgba(212,160,23,0.04) inset}
+ 
+.game-title{font-family:'Cinzel',serif;font-size:clamp(32px,6vw,64px);font-weight:900;color:var(--gold-bright);letter-spacing:8px;text-align:center;line-height:1.1;text-shadow:0 0 60px rgba(212,160,23,0.4)}
+.game-subtitle{font-family:'Crimson Pro',serif;font-size:clamp(14px,2vw,20px);font-style:italic;color:var(--sand);letter-spacing:3px;margin:12px 0 40px;opacity:.8}
+.ornament{color:var(--gold);font-size:24px;letter-spacing:12px;margin-bottom:16px;opacity:.6}
+ 
+.menu-btn{
+  display:block;width:260px;padding:12px 0;margin:8px auto;
+  font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:3px;
+  background:transparent;color:var(--sand-light);
+  border:1px solid rgba(212,160,23,0.35);border-radius:2px;cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.menu-btn::before{content:'';position:absolute;inset:0;background:rgba(212,160,23,0);transition:background .2s}
+.menu-btn:hover{color:var(--gold-bright);border-color:var(--gold);letter-spacing:4px}
+.menu-btn:hover::before{background:rgba(212,160,23,0.08)}
+ 
+/* ── GAME UI ── */
+#game-container{display:none;width:100vw;height:100vh;flex-direction:column}
+#game-container.active{display:flex}
+ 
+#top-bar{
+  height:52px;background:var(--night2);border-bottom:1px solid rgba(212,160,23,0.2);
+  display:flex;align-items:center;padding:0 16px;gap:20px;flex-shrink:0;
+  font-family:'Cinzel',serif;
+}
+.tb-title{font-size:16px;font-weight:700;color:var(--gold);letter-spacing:3px;margin-right:auto}
+.tb-phase{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.tb-phase span{color:var(--sand-light);margin-left:6px}
+.tb-turn{font-size:12px;color:var(--muted)}
+.tb-turn span{color:var(--gold-bright);font-weight:700}
+.tb-btn{padding:6px 14px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:2px;background:transparent;border:1px solid rgba(212,160,23,0.3);color:var(--sand);border-radius:2px;cursor:pointer;transition:all .2s}
+.tb-btn:hover{border-color:var(--gold);color:var(--gold-bright)}
+ 
+#main-area{display:flex;flex:1;overflow:hidden}
+ 
+/* ── CANVAS ── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+#gameCanvas{display:block;cursor:default}
+ 
+/* ── SIDEBAR ── */
+#sidebar{
+  width:240px;background:var(--night2);border-left:1px solid rgba(212,160,23,0.15);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+.sb-section{border-bottom:1px solid rgba(255,255,255,0.05);padding:12px 14px}
+.sb-title{font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+ 
+/* Player cards */
+.player-card{padding:8px 10px;border-radius:3px;margin-bottom:6px;border:1px solid transparent;transition:all .2s;cursor:pointer}
+.player-card.active{border-color:rgba(212,160,23,0.4);background:rgba(212,160,23,0.06)}
+.pc-header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.pc-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Cinzel',serif;flex-shrink:0}
+.pc-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700}
+.pc-class{font-size:11px;color:var(--muted);font-style:italic}
+.stat-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.stat-label{font-size:10px;color:var(--muted);width:55px;letter-spacing:.5px}
+.stat-bar-bg{flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.stat-bar{height:100%;border-radius:99px;transition:width .4s}
+.stat-val{font-size:10px;font-family:'Cinzel',serif;font-weight:700;min-width:28px;text-align:right}
+ 
+/* Log */
+#log-list{flex:1;overflow-y:auto;padding:8px 14px;font-size:12px;line-height:1.6;color:var(--text)}
+#log-list::-webkit-scrollbar{width:3px}
+#log-list::-webkit-scrollbar-thumb{background:rgba(212,160,23,0.2);border-radius:99px}
+.log-entry{margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--muted);margin-right:5px}
+.log-p1{color:#7ec8e3}.log-p2{color:#e3a07e}.log-p3{color:#a8e37e}.log-p4{color:#e37ea0}
+.log-sys{color:var(--gold)}
+ 
+/* Action panel */
+#action-panel{padding:10px 14px;background:rgba(0,0,0,0.2);border-top:1px solid rgba(255,255,255,0.05)}
+.ap-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.action-btn{
+  display:block;width:100%;padding:7px 10px;margin-bottom:5px;
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:1px;
+  background:var(--stone);color:var(--sand);border:1px solid rgba(255,255,255,0.08);
+  border-radius:2px;cursor:pointer;transition:all .2s;text-align:left;
+}
+.action-btn:hover:not(:disabled){background:var(--stone2);border-color:rgba(212,160,23,0.3);color:var(--gold-bright)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+.action-btn .cost{float:right;color:var(--gold);font-size:10px}
+ 
+/* ── MODAL ── */
+#modal-wrap{
+  position:absolute;inset:0;background:rgba(0,0,0,0.7);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+}
+#modal-wrap.hidden{display:none}
+.modal{
+  background:var(--night2);border:1px solid rgba(212,160,23,0.3);border-radius:4px;
+  padding:24px 28px;max-width:400px;width:90%;text-align:center;
+}
+.modal h3{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--gold-bright);margin-bottom:8px;letter-spacing:2px}
+.modal p{font-size:14px;color:var(--text);margin-bottom:16px;line-height:1.7;font-style:italic}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.modal-btn{padding:8px 20px;font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:2px;background:transparent;border:1px solid rgba(212,160,23,0.35);color:var(--sand);border-radius:2px;cursor:pointer;transition:all .2s}
+.modal-btn:hover{border-color:var(--gold);color:var(--gold-bright)}
+.modal-btn.primary{border-color:var(--gold);color:var(--gold-bright);background:rgba(212,160,23,0.1)}
+ 
+/* ── TOOLTIP ── */
+#tooltip{
+  position:absolute;background:var(--night2);border:1px solid rgba(212,160,23,0.3);
+  border-radius:3px;padding:8px 12px;font-size:12px;color:var(--text);
+  pointer-events:none;z-index:50;max-width:180px;line-height:1.5;
+  display:none;
+}
+#tooltip.visible{display:block}
+#tooltip strong{display:block;font-family:'Cinzel',serif;font-size:11px;font-weight:700;color:var(--gold-bright);margin-bottom:3px;letter-spacing:1px}
+ 
+/* Setup screen */
+#screen-setup{background:var(--night)}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0;max-width:500px;width:100%}
+.setup-card{
+  background:var(--night3);border:1px solid rgba(212,160,23,0.15);border-radius:4px;
+  padding:14px;cursor:pointer;transition:all .2s;
+}
+.setup-card:hover,.setup-card.selected{border-color:var(--gold);background:rgba(212,160,23,0.08)}
+.setup-card h4{font-family:'Cinzel',serif;font-size:14px;font-weight:700;margin-bottom:4px}
+.setup-card p{font-size:12px;color:var(--muted);font-style:italic;line-height:1.4}
+.setup-stat{font-size:11px;margin-top:6px}
+.setup-stat span{display:inline-block;padding:1px 6px;border-radius:99px;margin-right:3px;font-family:'Cinzel',serif;font-weight:700}
+.s-red{background:rgba(139,26,26,.3);color:#e87878}
+.s-gold{background:rgba(212,160,23,.25);color:var(--gold-bright)}
+.s-teal{background:rgba(26,107,90,.3);color:var(--teal-bright)}
+.s-blue{background:rgba(50,80,180,.3);color:#7eb0f0}
+.setup-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.name-input{
+  padding:8px 12px;background:var(--stone);border:1px solid rgba(212,160,23,0.2);
+  border-radius:2px;color:var(--text);font-family:'Crimson Pro',serif;font-size:15px;
+  width:100%;margin-bottom:12px;outline:none;
+}
+.name-input:focus{border-color:var(--gold)}
+.setup-section{margin-bottom:16px;width:100%;max-width:500px}
+.player-count-btns{display:flex;gap:8px}
+.pc-btn{flex:1;padding:8px;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:1px;background:var(--stone);color:var(--muted);border:1px solid rgba(255,255,255,0.08);border-radius:2px;cursor:pointer;transition:all .2s}
+.pc-btn.active{background:rgba(212,160,23,0.12);color:var(--gold-bright);border-color:var(--gold)}
+</style>
 </head>
 <body>
-    
+ 
+<!-- TITLE SCREEN -->
+<div class="screen" id="screen-title">
+  <div class="title-deco"></div>
+  <div class="ornament">✦ ✦ ✦</div>
+  <div class="game-title">CHO'L<br>SARKARDASI</div>
+  <div class="game-subtitle">Ipak yo'li — Qabilalar urushi</div>
+  <button class="menu-btn" id="btn-play">O'YINNI BOSHLASH</button>
+  <button class="menu-btn" id="btn-how">QOIDALAR</button>
+</div>
+ 
+<!-- SETUP SCREEN -->
+<div class="screen hidden" id="screen-setup">
+  <div class="ornament">⚔ ⚔ ⚔</div>
+  <div class="game-title" style="font-size:clamp(22px,4vw,40px);margin-bottom:4px">SARKARDALIKNI TANLANG</div>
+  <div class="game-subtitle" style="margin-bottom:20px">Har bir qabila o'ziga xos kuchga ega</div>
+ 
+  <div class="setup-section">
+    <div class="setup-label">O'yinchilar soni</div>
+    <div class="player-count-btns">
+      <button class="pc-btn" data-count="2">2 kishi</button>
+      <button class="pc-btn active" data-count="3">3 kishi</button>
+      <button class="pc-btn" data-count="4">4 kishi</button>
+    </div>
+  </div>
+ 
+  <div id="player-setups"></div>
+ 
+  <button class="menu-btn" id="btn-start-game" style="margin-top:16px">JANGGA KIRISH</button>
+  <button class="menu-btn" id="btn-back" style="margin-top:4px;opacity:.5;font-size:12px">← ORQAGA</button>
+</div>
+ 
+<!-- HOW TO PLAY -->
+<div class="screen hidden" id="screen-how">
+  <div style="max-width:520px;text-align:center;padding:20px">
+    <div class="game-title" style="font-size:28px;margin-bottom:12px">QOIDALAR</div>
+    <div style="font-size:15px;color:var(--text);line-height:1.8;text-align:left">
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">Maqsad:</span> Ipak yo'li karvonlarini nazorat qilib, eng ko'p boylik to'plash.</p>
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">Xarita:</span> Oltiburchak kataklar — cho'l, shahar, tog' va karvon yo'llari.</p>
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">Navbat:</span> Har navbat 3 ta harakatdan iborat: yuriш, jang, savdo.</p>
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">Jang:</span> Dushman hududiga hujum — kuch va omad hal qiladi.</p>
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">Savdo:</span> Shahar katakda turib savdo qiling — boylik ko'payadi.</p>
+      <p style="margin-bottom:10px"><span style="color:var(--gold-bright);font-family:'Cinzel',serif">G'alaba:</span> 500 UZS yig'ing yoki raqibni mag'lub eting.</p>
+    </div>
+    <button class="menu-btn" id="btn-how-back" style="margin-top:20px">← ORQAGA</button>
+  </div>
+</div>
+ 
+<!-- GAME -->
+<div id="game-container">
+  <div id="top-bar">
+    <div class="tb-title">CHO'L SARKARDASI</div>
+    <div class="tb-phase">Bosqich: <span id="tb-phase-val">Harakat</span></div>
+    <div class="tb-turn">Navbat: <span id="tb-turn-val">—</span></div>
+    <div class="tb-turn">Tur: <span id="tb-round-val">1</span></div>
+    <button class="tb-btn" id="btn-end-turn">NAVBATNI YAKUNLA →</button>
+    <button class="tb-btn" id="btn-menu">MENYU</button>
+  </div>
+  <div id="main-area">
+    <div id="canvas-wrap">
+      <canvas id="gameCanvas"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <div id="sidebar">
+      <div class="sb-section" id="players-panel">
+        <div class="sb-title">Sarkardalar</div>
+        <div id="player-cards"></div>
+      </div>
+      <div class="sb-section" style="padding:10px 14px">
+        <div class="sb-title">Tanlangan</div>
+        <div id="selection-info" style="font-size:12px;color:var(--muted);font-style:italic">Hech narsa tanlanmagan</div>
+      </div>
+      <div id="log-list"></div>
+      <div id="action-panel">
+        <div class="ap-title">Harakatlar</div>
+        <button class="action-btn" id="act-move">⟶ Ko'chirish <span class="cost">1 ap</span></button>
+        <button class="action-btn" id="act-attack">⚔ Hujum <span class="cost">2 ap</span></button>
+        <button class="action-btn" id="act-trade">⟁ Savdo <span class="cost">1 ap</span></button>
+        <button class="action-btn" id="act-recruit">+ Qo'shin <span class="cost">3 ap</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- MODAL -->
+<div id="modal-wrap" class="hidden">
+  <div class="modal">
+    <h3 id="modal-title">Sarlavha</h3>
+    <p id="modal-body">Matn</p>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+ 
+<script>
+// ════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════
+const HEX_SIZE = 38;
+const COLS = 14, ROWS = 9;
+const WIN_GOLD = 500;
+const AP_PER_TURN = 3;
+ 
+const CLASSES = {
+  jangchi:   { name:'Jangchi',   emoji:'⚔', color:'#cc2222', light:'#ff8888', atk:4, def:2, spd:3, gold:1, trait:'Hujumda +1 bonus' },
+  savdogar:  { name:'Savdogar',  emoji:'⟁', color:'#d4a017', light:'#f0c040', atk:1, def:2, spd:2, gold:4, trait:'Savdoda 2x daromad' },
+  sehrgar:   { name:'Sehrgar',   emoji:'✦', color:'#7040cc', light:'#b080ff', atk:3, def:1, spd:2, gold:2, trait:'Qumtufon: 2 katak maidoni' },
+  razvedkachi:{ name:'Razvedkachi',emoji:'◎', color:'#1a8a5a', light:'#40d090', atk:2, def:3, spd:4, gold:2, trait:'Ko\'rish maydoni +2' },
+};
+ 
+const TERRAIN = {
+  cho_l:    { name:"Cho'l",    color:'#8b6914', dark:'#5a4008', cost:1 },
+  shahar:   { name:'Shahar',   color:'#4a4060', dark:'#2a2040', cost:1 },
+  tog:      { name:"Tog'",     color:'#4a5a4a', dark:'#2a3a2a', cost:2 },
+  karvon:   { name:'Karvon yo\'li', color:'#7a5a20', dark:'#4a3a10', cost:1 },
+  vohasi:   { name:'Vohasi',   color:'#2a6a3a', dark:'#1a4a2a', cost:1 },
+};
+ 
+const PLAYER_COLORS = ['#7ec8e3','#e3a07e','#a8e37e','#e37ea0'];
+const PLAYER_NAMES_DEFAULT = ['Asilbek','Dilnoza','Jasur','Malika'];
+ 
+// ════════════════════════════════════════════════════
+//  HEX MATH
+// ════════════════════════════════════════════════════
+function hexToPixel(q, r) {
+  const x = HEX_SIZE * (3/2 * q);
+  const y = HEX_SIZE * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
+  return { x, y };
+}
+function pixelToHex(px, py) {
+  const q = (2/3 * px) / HEX_SIZE;
+  const r = (-1/3 * px + Math.sqrt(3)/3 * py) / HEX_SIZE;
+  return cubeRound(q, -q-r, r);
+}
+function cubeRound(x, y, z) {
+  let rx=Math.round(x), ry=Math.round(y), rz=Math.round(z);
+  const dx=Math.abs(rx-x), dy=Math.abs(ry-y), dz=Math.abs(rz-z);
+  if(dx>dy&&dx>dz) rx=-ry-rz;
+  else if(dy>dz) ry=-rx-rz;
+  else rz=-rx-ry;
+  return {q:rx, r:rz};
+}
+function hexDist(a, b) {
+  return (Math.abs(a.q-b.q)+Math.abs(a.q+a.r-b.q-b.r)+Math.abs(a.r-b.r))/2;
+}
+function hexNeighbors(q, r) {
+  return [{q:q+1,r},{q:q-1,r},{q,r:r+1},{q,r:r-1},{q:q+1,r:r-1},{q:q-1,r:r+1}];
+}
+ 
+// ════════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════════
+let G = {}; // global game state
+ 
+function initGame(playerConfigs) {
+  // Build hex grid
+  const tiles = {};
+  const terrainTypes = Object.keys(TERRAIN);
+  for(let q=0; q<COLS; q++) {
+    for(let r=0; r<ROWS; r++) {
+      let type;
+      if((q===3&&r===2)||(q===7&&r===4)||(q===11&&r===2)||(q===5&&r===6)||(q===9&&r===1)) type='shahar';
+      else if((q===2&&r===5)||(q===10&&r===6)) type='vohasi';
+      else if((q===4&&r===1)||(q===8&&r===3)||(q===12&&r===5)) type='tog';
+      else if(q%3===1) type='karvon';
+      else type='cho_l';
+      tiles[`${q},${r}`] = { q, r, type, owner:-1, resource: type==='shahar'?15:type==='karvon'?8:type==='vohasi'?10:3 };
+    }
+  }
+ 
+  // Build players
+  const startPositions = [{q:1,r:1},{q:COLS-2,r:ROWS-2},{q:1,r:ROWS-2},{q:COLS-2,r:1}];
+  const players = playerConfigs.map((cfg, i) => ({
+    id: i,
+    name: cfg.name,
+    classKey: cfg.classKey,
+    cls: CLASSES[cfg.classKey],
+    color: PLAYER_COLORS[i],
+    isBot: cfg.isBot,
+    q: startPositions[i].q,
+    r: startPositions[i].r,
+    hp: 20,
+    maxHp: 20,
+    troops: 5,
+    gold: 50,
+    ap: AP_PER_TURN,
+    alive: true,
+    vision: cfg.classKey==='razvedkachi'?4:2,
+  }));
+ 
+  // Mark starting tiles as owned
+  players.forEach(p => {
+    tiles[`${p.q},${p.r}`].owner = p.id;
+  });
+ 
+  G = {
+    tiles,
+    players,
+    currentPlayer: 0,
+    round: 1,
+    selected: null, // hex {q,r} or null
+    mode: 'select', // select | move | attack
+    log: [],
+    over: false,
+    winner: -1,
+  };
+ 
+  addLog('sys', 'O\'yin boshlandi! Birinchi navbat: ' + players[0].name);
+}
+ 
+// ════════════════════════════════════════════════════
+//  CANVAS SETUP
+// ════════════════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let camX = 0, camY = 0, camScale = 1;
+let hoveredHex = null;
+ 
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  // Center map
+  camX = canvas.width  / 2 - (HEX_SIZE * 1.5 * COLS) / 2;
+  camY = canvas.height / 2 - (HEX_SIZE * Math.sqrt(3) * ROWS) / 2 - 20;
+  render();
+}
+ 
+// ════════════════════════════════════════════════════
+//  RENDERING
+// ════════════════════════════════════════════════════
+function drawHex(q, r, fillColor, strokeColor, alpha=1) {
+  const {x,y} = hexToPixel(q,r);
+  const cx = x + camX, cy = y + camY;
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a = Math.PI/180*(60*i-30);
+    const px = cx + HEX_SIZE*Math.cos(a);
+    const py = cy + HEX_SIZE*Math.sin(a);
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+ 
+function render() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+ 
+  // Background
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+ 
+  if(!G.tiles) return;
+ 
+  const cp = G.players[G.currentPlayer];
+  const reachable = G.mode==='move' ? getReachable(cp) : [];
+  const attackable = G.mode==='attack' ? getAttackable(cp) : [];
+ 
+  // Draw tiles
+  for(let q=0; q<COLS; q++) {
+    for(let r=0; r<ROWS; r++) {
+      const key = `${q},${r}`;
+      const tile = G.tiles[key];
+      if(!tile) continue;
+      const ter = TERRAIN[tile.type];
+      const isHovered = hoveredHex && hoveredHex.q===q && hoveredHex.r===r;
+      const isReach   = reachable.some(h=>h.q===q&&h.r===r);
+      const isAttack  = attackable.some(h=>h.q===q&&h.r===r);
+      const isSelected = G.selected && G.selected.q===q && G.selected.r===r;
+ 
+      let fill = ter.dark;
+      let stroke = ter.color;
+ 
+      if(tile.owner >= 0){
+        const oc = G.players[tile.owner]?.color || '#888';
+        fill = blendHex(ter.dark, oc, 0.18);
+        stroke = blendHex(ter.color, oc, 0.4);
+      }
+      if(isHovered) fill = blendHex(fill, '#ffffff', 0.12);
+      if(isReach)   { fill = blendHex(fill,'#2ecc8a',0.25); stroke='#2ecc8a'; }
+      if(isAttack)  { fill = blendHex(fill,'#cc2222',0.3); stroke='#cc2222'; }
+      if(isSelected){ stroke='#f0c040'; ctx.lineWidth=2; }
+ 
+      drawHex(q, r, fill, stroke);
+ 
+      // Terrain icon
+      const {x,y} = hexToPixel(q,r);
+      const cx2 = x+camX, cy2 = y+camY;
+      ctx.fillStyle = ter.color;
+      ctx.font = '10px Cinzel, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const icons = {cho_l:'·',shahar:'⌂',tog:'▲',karvon:'━',vohasi:'❊'};
+      ctx.fillText(icons[tile.type]||'', cx2, cy2+14);
+ 
+      // Resource amount on cities/oases
+      if(tile.type==='shahar'||tile.type==='vohasi'||tile.type==='karvon'){
+        ctx.fillStyle = 'rgba(212,160,23,0.8)';
+        ctx.font = 'bold 9px Cinzel, serif';
+        ctx.fillText(tile.resource, cx2, cy2-12);
+      }
+ 
+      // Owner dot
+      if(tile.owner>=0){
+        ctx.beginPath();
+        ctx.arc(cx2+14,cy2-14,4,0,Math.PI*2);
+        ctx.fillStyle = G.players[tile.owner]?.color||'#888';
+        ctx.fill();
+      }
+    }
+  }
+ 
+  // Draw players
+  G.players.forEach((p,i) => {
+    if(!p.alive) return;
+    const {x,y} = hexToPixel(p.q,p.r);
+    const cx2=x+camX, cy2=y+camY;
+    const isCurrent = i===G.currentPlayer;
+ 
+    // Shadow
+    ctx.beginPath();
+    ctx.ellipse(cx2,cy2+20,12,5,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.fill();
+ 
+    // Body circle
+    ctx.beginPath();
+    ctx.arc(cx2,cy2,isCurrent?15:13,0,Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.strokeStyle = isCurrent ? '#f0c040':'rgba(0,0,0,0.5)';
+    ctx.lineWidth = isCurrent?2.5:1;
+    ctx.stroke();
+ 
+    // Class emoji
+    ctx.fillStyle = '#fff';
+    ctx.font = isCurrent?'14px serif':'12px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(p.cls.emoji, cx2, cy2);
+ 
+    // Name tag
+    if(isCurrent){
+      ctx.fillStyle='rgba(0,0,0,0.7)';
+      const tw = ctx.measureText(p.name).width+8;
+      ctx.fillRect(cx2-tw/2, cy2-30, tw, 14);
+      ctx.fillStyle=p.color;
+      ctx.font='bold 10px Cinzel, serif';
+      ctx.fillText(p.name, cx2, cy2-23);
+    }
+ 
+    // HP bar
+    const bw=28, bh=4, bx=cx2-14, by=cy2+18;
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle=p.hp>10?'#2ecc71':p.hp>5?'#e67e22':'#cc2222';
+    ctx.fillRect(bx,by,bw*(p.hp/p.maxHp),bh);
+ 
+    // Troop count
+    ctx.fillStyle='rgba(0,0,0,0.6)';
+    ctx.font='bold 9px Cinzel, serif';
+    ctx.textAlign='center';
+    ctx.fillStyle=p.color;
+    ctx.fillText('⚑'+p.troops, cx2, cy2+30);
+  });
+ 
+  // Highlight selected player position
+  if(G.selected){
+    const {x,y} = hexToPixel(G.selected.q,G.selected.r);
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const a=Math.PI/180*(60*i-30);
+      const px=x+camX+HEX_SIZE*Math.cos(a);
+      const py=y+camY+HEX_SIZE*Math.sin(a);
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle='#f0c040';
+    ctx.lineWidth=2.5;
+    ctx.setLineDash([4,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+ 
+function blendHex(c1, c2, t) {
+  const parse=c=>{const r=parseInt(c.slice(1),16);return[(r>>16)&255,(r>>8)&255,r&255]};
+  const [r1,g1,b1]=parse(c1), [r2,g2,b2]=parse(c2);
+  const r=Math.round(r1+(r2-r1)*t),g=Math.round(g1+(g2-g1)*t),b=Math.round(b1+(b2-b1)*t);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+ 
+// ════════════════════════════════════════════════════
+//  GAME LOGIC
+// ════════════════════════════════════════════════════
+function getReachable(p) {
+  if(p.ap < 1) return [];
+  const out=[], visited=new Set();
+  const queue=[{q:p.q,r:p.r,steps:0}];
+  visited.add(`${p.q},${p.r}`);
+  while(queue.length){
+    const cur=queue.shift();
+    if(cur.steps>0) out.push({q:cur.q,r:cur.r});
+    if(cur.steps>=p.cls.spd) continue;
+    hexNeighbors(cur.q,cur.r).forEach(nb=>{
+      const key=`${nb.q},${nb.r}`;
+      if(nb.q<0||nb.q>=COLS||nb.r<0||nb.r>=ROWS) return;
+      if(visited.has(key)) return;
+      const occ = G.players.find(x=>x.alive&&x.q===nb.q&&x.r===nb.r);
+      if(occ) return;
+      visited.add(key);
+      queue.push({q:nb.q,r:nb.r,steps:cur.steps+1});
+    });
+  }
+  return out;
+}
+ 
+function getAttackable(p) {
+  if(p.ap < 2) return [];
+  return hexNeighbors(p.q, p.r).filter(nb=>{
+    if(nb.q<0||nb.q>=COLS||nb.r<0||nb.r>=ROWS) return false;
+    return G.players.some(x=>x.id!==p.id&&x.alive&&x.q===nb.q&&x.r===nb.r);
+  });
+}
+ 
+function doMove(p, q, r) {
+  if(p.ap < 1) { addLog('sys','Harakat uchun AP yetarli emas!'); return false; }
+  const reachable = getReachable(p);
+  if(!reachable.some(h=>h.q===q&&h.r===r)) { addLog('sys','U katakka yetib bormaysiz!'); return false; }
+  p.q=q; p.r=r; p.ap--;
+  G.tiles[`${q},${r}`].owner = p.id;
+  addLog(p.id, `${p.name} (${p.cls.name}) ko'chdi → [${q},${r}]`);
+  // Collect resource
+  const tile = G.tiles[`${q},${r}`];
+  if(tile.resource > 0 && tile.type!=='cho_l') {
+    const gain = p.cls.key==='savdogar' ? tile.resource*2 : tile.resource;
+    p.gold += gain;
+    addLog(p.id, `+${gain} UZS (${TERRAIN[tile.type].name})`);
+    tile.resource = Math.max(0, tile.resource - Math.floor(gain/2));
+  }
+  return true;
+}
+ 
+function doAttack(attacker, def) {
+  if(attacker.ap < 2) { addLog('sys','Hujum uchun 2 AP kerak!'); return; }
+  attacker.ap -= 2;
+  const atkRoll = Math.random();
+  const atkPow = attacker.cls.atk + attacker.troops + (attacker.classKey==='jangchi'?1:0);
+  const defPow = def.cls.def + def.troops;
+  const total = atkPow + defPow;
+  const atkWins = atkRoll < (atkPow / total);
+ 
+  addLog(attacker.id, `${attacker.name} ⚔ ${def.name} — hujum!`);
+ 
+  if(atkWins){
+    const dmg = Math.max(1, Math.floor(attacker.cls.atk * 1.5 + Math.random()*3));
+    def.hp = Math.max(0, def.hp - dmg);
+    def.troops = Math.max(0, def.troops - 1);
+    addLog(attacker.id, `G'ALABA! ${def.name} -${dmg} HP`);
+    if(def.hp <= 0){
+      def.alive = false;
+      addLog('sys', `${def.name} MAGHLUБ BO'LDI!`);
+      attacker.gold += 50;
+      addLog(attacker.id, `${attacker.name} +50 UZS (g'alaba mukofoti)`);
+    }
+  } else {
+    const dmg = Math.max(1, Math.floor(def.cls.def + Math.random()*2));
+    attacker.hp = Math.max(0, attacker.hp - dmg);
+    attacker.troops = Math.max(0, attacker.troops - 1);
+    addLog(def.id, `${def.name} daf qildi! ${attacker.name} -${dmg} HP`);
+    if(attacker.hp <= 0){
+      attacker.alive = false;
+      addLog('sys', `${attacker.name} MAGHLUБ BO'LDI!`);
+      def.gold += 50;
+    }
+  }
+  checkWinCondition();
+}
+ 
+function doTrade(p) {
+  const tile = G.tiles[`${p.q},${p.r}`];
+  if(tile.type !== 'shahar' && tile.type !== 'karvon' && tile.type !== 'vohasi'){
+    addLog('sys','Savdo faqat shahar, vohasi yoki karvon yo\'lida!'); return;
+  }
+  if(p.ap < 1){ addLog('sys','AP yetarli emas!'); return; }
+  if(tile.resource <= 0){ addLog('sys','Bu yerda savdo resursi tugagan!'); return; }
+  p.ap--;
+  const base = tile.resource;
+  const gain = p.cls.key==='savdogar' ? base*2 : base;
+  p.gold += gain;
+  tile.resource = Math.max(0, tile.resource - 3);
+  addLog(p.id, `${p.name} savdo qildi: +${gain} UZS`);
+  checkWinCondition();
+}
+ 
+function doRecruit(p) {
+  const cost = 30;
+  if(p.ap < 3){ addLog('sys','Qo\'shin yig\'ish uchun 3 AP kerak!'); return; }
+  if(p.gold < cost){ addLog('sys',`Qo\'shin uchun ${cost} UZS kerak!`); return; }
+  p.ap -= 3; p.gold -= cost; p.troops += 2;
+  addLog(p.id, `${p.name} +2 qo'shin yig'di (−${cost} UZS)`);
+}
+ 
+function endTurn() {
+  // Regenerate tiles resources slowly
+  Object.values(G.tiles).forEach(t=>{
+    if(t.type!=='cho_l') t.resource = Math.min(t.type==='shahar'?20:12, t.resource+2);
+  });
+ 
+  // Next player
+  let next = (G.currentPlayer + 1) % G.players.length;
+  let loops = 0;
+  while(!G.players[next].alive && loops++ < G.players.length) next=(next+1)%G.players.length;
+  if(next <= G.currentPlayer) G.round++;
+ 
+  G.currentPlayer = next;
+  const np = G.players[next];
+  np.ap = AP_PER_TURN;
+  // HP regen
+  np.hp = Math.min(np.maxHp, np.hp + 1);
+  G.mode = 'select';
+  G.selected = null;
+  addLog('sys', `— ${np.name} navbati (Tur ${G.round})`);
+  updateUI();
+  render();
+ 
+  if(np.isBot) setTimeout(botTurn, 600);
+}
+ 
+function checkWinCondition() {
+  const alive = G.players.filter(p=>p.alive);
+  if(alive.length === 1){
+    G.over=true; G.winner=alive[0].id;
+    showModal(`G'ALABA!`, `${alive[0].name} yagona sarkardalikni qo'lga kiritdi!\nJami boylik: ${alive[0].gold} UZS`, [{label:'Qayta o\'ynash', fn:()=>{ hideModal(); showScreen('screen-setup'); }},{label:'Menyu',fn:()=>{ hideModal(); showScreen('screen-title'); }, primary:true}]);
+    return;
+  }
+  const rich = G.players.find(p=>p.alive&&p.gold>=WIN_GOLD);
+  if(rich){
+    G.over=true; G.winner=rich.id;
+    showModal(`BOY SARKARДА!`, `${rich.name} ${WIN_GOLD} UZS to'plab g'olib chiqdi!`, [{label:'Qayta o\'ynash',fn:()=>{hideModal();showScreen('screen-setup');}},{label:'Menyu',fn:()=>{hideModal();showScreen('screen-title');},primary:true}]);
+  }
+}
+ 
+// ════════════════════════════════════════════════════
+//  BOT AI
+// ════════════════════════════════════════════════════
+function botTurn() {
+  const bot = G.players[G.currentPlayer];
+  if(!bot || !bot.isBot || !bot.alive) { endTurn(); return; }
+ 
+  let actions = 0;
+  const maxActions = 8;
+ 
+  function step() {
+    if(actions++ > maxActions || G.over) { endTurn(); updateUI(); render(); return; }
+ 
+    const attackable = getAttackable(bot);
+    const reachable = getReachable(bot);
+    const curTile = G.tiles[`${bot.q},${bot.r}`];
+ 
+    // Priority 1: Attack if possible and troops > 2
+    if(attackable.length && bot.troops > 2 && bot.ap >= 2) {
+      const target = attackable[0];
+      const enemy = G.players.find(p=>p.alive&&p.q===target.q&&p.r===target.r);
+      if(enemy) { doAttack(bot, enemy); setTimeout(step, 400); return; }
+    }
+ 
+    // Priority 2: Trade if on resource tile
+    if(curTile && curTile.resource > 3 && (curTile.type==='shahar'||curTile.type==='karvon'||curTile.type==='vohasi') && bot.ap >= 1) {
+      doTrade(bot); setTimeout(step, 300); return;
+    }
+ 
+    // Priority 3: Move toward nearest city/karvon
+    if(reachable.length && bot.ap >= 1) {
+      // Find best tile (resource city or enemy direction)
+      let best = null, bestScore = -Infinity;
+      reachable.forEach(h=>{
+        const t = G.tiles[`${h.q},${h.r}`];
+        if(!t) return;
+        let score = t.resource;
+        if(t.type==='shahar') score += 20;
+        if(t.type==='karvon') score += 10;
+        if(t.type==='vohasi') score += 12;
+        // Move toward enemies if strong
+        const nearEnemy = G.players.filter(p=>p.alive&&p.id!==bot.id).some(e=>hexDist(h,e)<3);
+        if(nearEnemy && bot.troops >= 4) score += 15;
+        if(score > bestScore){ bestScore=score; best=h; }
+      });
+      if(best){ doMove(bot,best.q,best.r); setTimeout(step,350); return; }
+    }
+ 
+    // Priority 4: Recruit if enough gold
+    if(bot.gold >= 30 && bot.ap >= 3) {
+      doRecruit(bot); setTimeout(step, 300); return;
+    }
+ 
+    endTurn(); updateUI(); render();
+  }
+ 
+  step();
+}
+ 
+// ════════════════════════════════════════════════════
+//  UI UPDATES
+// ════════════════════════════════════════════════════
+function updateUI() {
+  if(!G.players) return;
+  const cp = G.players[G.currentPlayer];
+  document.getElementById('tb-turn-val').textContent = cp.name;
+  document.getElementById('tb-turn-val').style.color = cp.color;
+  document.getElementById('tb-round-val').textContent = G.round;
+  document.getElementById('tb-phase-val').textContent =
+    G.mode==='move'?'Ko\'chirish':G.mode==='attack'?'Hujum':'Harakat';
+ 
+  // Player cards
+  const cardsEl = document.getElementById('player-cards');
+  cardsEl.innerHTML = '';
+  G.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-card' + (p.id===G.currentPlayer?' active':'') + (!p.alive?' dead':'');
+    div.style.opacity = p.alive?1:0.4;
+    div.innerHTML = `
+      <div class="pc-header">
+        <div class="pc-avatar" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.cls.emoji}</div>
+        <div>
+          <div class="pc-name" style="color:${p.color}">${p.name}</div>
+          <div class="pc-class">${p.cls.name}${p.alive?'':' — Mag\'lub'}</div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Sog'liq</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:${p.hp/p.maxHp*100}%;background:${p.hp>10?'#2ecc71':p.hp>5?'#e67e22':'#cc2222'}"></div></div>
+        <span class="stat-val" style="color:#2ecc71">${p.hp}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Qo'shin</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:${Math.min(100,p.troops/10*100)}%;background:#7ec8e3"></div></div>
+        <span class="stat-val" style="color:#7ec8e3">${p.troops}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Boylik</span>
+        <div class="stat-bar-bg"><div class="stat-bar" style="width:${Math.min(100,p.gold/WIN_GOLD*100)}%;background:var(--gold)"></div></div>
+        <span class="stat-val" style="color:var(--gold)">${p.gold}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">AP: ${'◆'.repeat(p.ap)}${'◇'.repeat(Math.max(0,AP_PER_TURN-p.ap))} &nbsp;|&nbsp; UZS: ${p.gold}</div>
+    `;
+    cardsEl.appendChild(div);
+  });
+ 
+  // Action buttons
+  const isBot = cp.isBot;
+  document.getElementById('act-move').disabled    = isBot || cp.ap < 1 || G.over;
+  document.getElementById('act-attack').disabled  = isBot || cp.ap < 2 || G.over || getAttackable(cp).length===0;
+  document.getElementById('act-trade').disabled   = isBot || cp.ap < 1 || G.over;
+  document.getElementById('act-recruit').disabled = isBot || cp.ap < 3 || cp.gold < 30 || G.over;
+  document.getElementById('btn-end-turn').disabled= isBot || G.over;
+}
+ 
+function addLog(pid, msg) {
+  const el = document.getElementById('log-list');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  const cls = pid==='sys'?'log-sys':`log-p${parseInt(pid)+1}`;
+  const time = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  div.innerHTML = `<span class="log-time">${time}</span><span class="${cls}">${msg}</span>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  G.log = G.log || [];
+  G.log.push({pid, msg, time});
+}
+ 
+function updateSelectionInfo(hex) {
+  const el = document.getElementById('selection-info');
+  if(!hex){ el.innerHTML='<span style="font-style:italic;color:var(--muted)">Hech narsa tanlanmagan</span>'; return; }
+  const tile = G.tiles[`${hex.q},${hex.r}`];
+  const player = G.players.find(p=>p.alive&&p.q===hex.q&&p.r===hex.r);
+  const ter = TERRAIN[tile.type];
+  let html = `<div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--gold-bright);margin-bottom:4px">${ter.name}</div>`;
+  html += `<div style="color:var(--muted);font-size:11px">Resurs: <span style="color:var(--gold)">${tile.resource} UZS</span></div>`;
+  if(tile.owner>=0) html+=`<div style="font-size:11px;color:${G.players[tile.owner]?.color||'#888'}">Egasi: ${G.players[tile.owner]?.name||'?'}</div>`;
+  if(player) html+=`<div style="margin-top:6px;color:${player.color};font-size:12px;font-weight:600">${player.name} (${player.cls.name})<br><span style="font-size:11px;color:var(--muted)">HP:${player.hp} | ⚑${player.troops} | ${player.gold} UZS</span></div>`;
+  el.innerHTML = html;
+}
+ 
+// ════════════════════════════════════════════════════
+//  INPUT HANDLING
+// ════════════════════════════════════════════════════
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left - camX;
+  const my = e.clientY - rect.top  - camY;
+  const hex = pixelToHex(mx, my);
+  if(hex.q>=0&&hex.q<COLS&&hex.r>=0&&hex.r<ROWS) {
+    hoveredHex = hex;
+    const tile = G.tiles?.[`${hex.q},${hex.r}`];
+    if(tile){
+      const tt = document.getElementById('tooltip');
+      tt.classList.add('visible');
+      tt.style.left = (e.clientX - rect.left + 14)+'px';
+      tt.style.top  = (e.clientY - rect.top  - 10)+'px';
+      const ter = TERRAIN[tile.type];
+      const pOnTile = G.players?.find(p=>p.alive&&p.q===hex.q&&p.r===hex.r);
+      tt.innerHTML = `<strong>${ter.name}</strong>Resurs: ${tile.resource} UZS${pOnTile?`<br>${pOnTile.name}`:``}`;
+    }
+  } else {
+    hoveredHex=null;
+    document.getElementById('tooltip').classList.remove('visible');
+  }
+  if(G.tiles) render();
+});
+ 
+canvas.addEventListener('mouseleave', () => {
+  hoveredHex=null;
+  document.getElementById('tooltip').classList.remove('visible');
+  if(G.tiles) render();
+});
+ 
+canvas.addEventListener('click', e => {
+  if(!G.tiles || G.over) return;
+  const cp = G.players[G.currentPlayer];
+  if(cp.isBot) return;
+ 
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left - camX;
+  const my = e.clientY - rect.top  - camY;
+  const hex = pixelToHex(mx, my);
+  if(hex.q<0||hex.q>=COLS||hex.r<0||hex.r>=ROWS) return;
+ 
+  if(G.mode === 'move'){
+    const ok = doMove(cp, hex.q, hex.r);
+    G.mode = 'select';
+    G.selected = null;
+    updateUI(); render();
+    return;
+  }
+ 
+  if(G.mode === 'attack'){
+    const enemy = G.players.find(p=>p.alive&&p.id!==cp.id&&p.q===hex.q&&p.r===hex.r);
+    if(enemy) doAttack(cp, enemy);
+    G.mode='select'; G.selected=null;
+    updateUI(); render();
+    return;
+  }
+ 
+  G.selected = hex;
+  updateSelectionInfo(hex);
+  render();
+});
+ 
+// Action buttons
+document.getElementById('act-move').addEventListener('click', () => {
+  G.mode = G.mode==='move'?'select':'move';
+  G.selected=null; updateUI(); render();
+});
+document.getElementById('act-attack').addEventListener('click', () => {
+  G.mode = G.mode==='attack'?'select':'attack';
+  G.selected=null; updateUI(); render();
+});
+document.getElementById('act-trade').addEventListener('click', () => {
+  const cp=G.players[G.currentPlayer];
+  doTrade(cp); G.mode='select'; updateUI(); render();
+});
+document.getElementById('act-recruit').addEventListener('click', () => {
+  const cp=G.players[G.currentPlayer];
+  doRecruit(cp); G.mode='select'; updateUI(); render();
+});
+document.getElementById('btn-end-turn').addEventListener('click', endTurn);
+document.getElementById('btn-menu').addEventListener('click', () => {
+  showModal('O\'YINDAN CHIQISH?','Joriy o\'yin saqlanmaydi.',[
+    {label:'Davom etish', fn:hideModal},
+    {label:'Menyuga qaytish', fn:()=>{hideModal();showGameContainer(false);showScreen('screen-title');}},
+  ]);
+});
+ 
+// ════════════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════════════
+function showModal(title, body, buttons) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  const btns = document.getElementById('modal-btns');
+  btns.innerHTML='';
+  buttons.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='modal-btn'+(b.primary?' primary':'');
+    btn.textContent=b.label;
+    btn.addEventListener('click',b.fn);
+    btns.appendChild(btn);
+  });
+  document.getElementById('modal-wrap').classList.remove('hidden');
+}
+function hideModal(){ document.getElementById('modal-wrap').classList.add('hidden'); }
+ 
+// ════════════════════════════════════════════════════
+//  SCREENS
+// ════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+function showGameContainer(show) {
+  const gc=document.getElementById('game-container');
+  if(show){gc.classList.add('active');gc.style.display='flex';}
+  else{gc.classList.remove('active');gc.style.display='none';}
+}
+ 
+// ════════════════════════════════════════════════════
+//  SETUP SCREEN
+// ════════════════════════════════════════════════════
+let setupPlayerCount = 3;
+const classKeys = Object.keys(CLASSES);
+ 
+function buildSetupUI() {
+  const container = document.getElementById('player-setups');
+  container.innerHTML = '';
+  for(let i=0; i<setupPlayerCount; i++){
+    const isBot = i >= 1; // Player 1 is human, rest are bots by default
+    const section = document.createElement('div');
+    section.className='setup-section';
+    section.innerHTML=`
+      <div class="setup-label" style="color:${PLAYER_COLORS[i]}">${isBot?'Bot':'Siz'} — O\'yinchi ${i+1}</div>
+      <input class="name-input" id="setup-name-${i}" value="${PLAYER_NAMES_DEFAULT[i]}" placeholder="Ism kiriting" ${isBot?'disabled':''}>
+      <div class="setup-grid" id="setup-class-${i}">
+        ${classKeys.map(k=>{
+          const cl=CLASSES[k];
+          return `<div class="setup-card" data-player="${i}" data-class="${k}">
+            <h4 style="color:${cl.light}">${cl.emoji} ${cl.name}</h4>
+            <p>${cl.trait}</p>
+            <div class="setup-stat">
+              <span class="s-red">ATK ${cl.atk}</span>
+              <span class="s-blue">DEF ${cl.def}</span>
+              <span class="s-teal">SPD ${cl.spd}</span>
+              <span class="s-gold">SAVDO ${cl.gold}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    container.appendChild(section);
+  }
+ 
+  // Default selections
+  setupSelections = Array.from({length:setupPlayerCount},(_,i)=>classKeys[i%classKeys.length]);
+ 
+  // Highlight defaults
+  for(let i=0;i<setupPlayerCount;i++){
+    const def=document.querySelector(`#setup-class-${i} [data-class="${setupSelections[i]}"]`);
+    if(def) def.classList.add('selected');
+  }
+ 
+  // Click handlers
+  document.querySelectorAll('.setup-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const pi=parseInt(card.dataset.player);
+      const ck=card.dataset.class;
+      setupSelections[pi]=ck;
+      document.querySelectorAll(`#setup-class-${pi} .setup-card`).forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+}
+ 
+let setupSelections=[];
+ 
+document.querySelectorAll('.pc-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.pc-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    setupPlayerCount=parseInt(btn.dataset.count);
+    buildSetupUI();
+  });
+});
+ 
+document.getElementById('btn-play').addEventListener('click',()=>{
+  showScreen('screen-setup');
+  buildSetupUI();
+});
+ 
+document.getElementById('btn-how').addEventListener('click',()=>showScreen('screen-how'));
+document.getElementById('btn-how-back').addEventListener('click',()=>showScreen('screen-title'));
+document.getElementById('btn-back').addEventListener('click',()=>showScreen('screen-title'));
+ 
+document.getElementById('btn-start-game').addEventListener('click',()=>{
+  const configs = Array.from({length:setupPlayerCount},(_,i)=>({
+    name: i===0 ? (document.getElementById('setup-name-0').value||'Qahramonm') : PLAYER_NAMES_DEFAULT[i],
+    classKey: setupSelections[i] || classKeys[i%classKeys.length],
+    isBot: i > 0,
+  }));
+  // Add classKey to cls reference
+  configs.forEach(c=>{ CLASSES[c.classKey].key=c.classKey; });
+ 
+  showScreen('');
+  showGameContainer(true);
+  initGame(configs);
+  resizeCanvas();
+  updateUI();
+  render();
+ 
+  // If first player is not human (shouldn't happen but safety)
+  if(G.players[0].isBot) setTimeout(botTurn, 500);
+});
+ 
+window.addEventListener('resize', () => {
+  if(document.getElementById('game-container').classList.contains('active')) resizeCanvas();
+});
+</script>
 </body>
 </html>
+ 
